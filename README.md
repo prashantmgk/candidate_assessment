@@ -41,7 +41,7 @@ candidate_assessment/
 │   ├── app/
 │   │   ├── auth.py              # Password hashing, JWT issue/decode, FastAPI dependencies
 │   │   ├── create_admin.py      # CLI helper to create the first admin user
-│   │   ├── db.py                # Data-access layer — all DynamoDB queries in one place
+│   │   ├── db.py                # Data-access layer  all DynamoDB queries in one place
 │   │   ├── main.py              # FastAPI app factory, lifespan hooks, CORS
 │   │   ├── schemas.py           # Pydantic v2 request/response models
 │   │   ├── routers/
@@ -57,7 +57,7 @@ candidate_assessment/
 ├── frontend/
 │   ├── src/
 │   │   ├── api/                 # Fetch wrappers (client.js, auth.js, candidates.js)
-│   │   ├── context/             # AuthProvider — token stored in-memory, not localStorage
+│   │   ├── context/             # AuthProvider  token stored in-memory, not localStorage
 │   │   ├── pages/               # LoginPage, RegisterPage, CandidateListPage, CandidateDetailPage
 │   │   ├── routes/              # ProtectedRoute wrapper
 │   │   ├── hooks/               # Custom React hooks
@@ -80,7 +80,7 @@ candidate_assessment/
 cp .env.example .env
 ```
 
-The defaults in `.env.example` work for local development out of the box — you only need to change `JWT_SECRET` if you care about token security locally.
+The defaults in `.env.example` work for local development out of the box  you only need to change `JWT_SECRET` if you care about token security locally.
 
 ### 2. Start all services
 
@@ -94,7 +94,7 @@ This brings up **three containers**:
 |------------------|-----------|----------------------------------------|------------------------------------------------------------|
 | `frontend`       | `5173`    | http://localhost:5173                  | React + Vite dev server with hot-reload                    |
 | `backend`        | `8000`    | http://localhost:8000/docs (Swagger)   | FastAPI, reloads on file changes via mounted volume        |
-| `dynamodb-local` | `8001`    | —                                      | Exposed on 8001 on the host; backend reaches it on port 8000 via the internal Docker network |
+| `dynamodb-local` | `8001`    |                                       | Exposed on 8001 on the host; backend reaches it on port 8000 via the internal Docker network |
 
 > **No manual migration step is needed.** On every backend startup, `scripts/create_table.py` runs idempotently (skips tables that already exist), and `scripts/seed.py` inserts 55 fake candidates only when the table is empty.
 
@@ -120,7 +120,7 @@ This brings up **three containers**:
 
 ## Creating an Admin Account
 
-`POST /auth/register` always creates a `reviewer`. The `UserRegister` schema has no `role` field at all — this is by design so there is nothing a client can spoof. Admin accounts are created exclusively via a CLI module that runs inside the backend container (and therefore already requires server access):
+`POST /auth/register` always creates a `reviewer`. The `UserRegister` schema has no `role` field at all  this is by design so there is nothing a client can spoof. Admin accounts are created exclusively via a CLI module that runs inside the backend container (and therefore already requires server access):
 
 ```bash
 docker compose exec backend python -m app.create_admin admin@techkraft.com yourpassword
@@ -249,18 +249,18 @@ curl -s -X PATCH http://localhost:8000/candidates/<candidate_id>/notes \
 ```bash
 curl -s -X DELETE http://localhost:8000/candidates/<candidate_id> \
   -H "Authorization: Bearer <admin_token>"
-# 204 No Content — sets status="archived"; the row is never hard-deleted
+# 204 No Content  sets status="archived"; the row is never hard-deleted
 ```
 
 ---
 
 ## Architecture Decision Records
 
-### ADR 1 — DynamoDB GSIs for `status` and `role_applied` instead of a single-table scan
+### ADR 1 : DynamoDB GSIs for `status` and `role_applied` instead of a single-table scan
 
 **Context**
 
-`GET /candidates` must support four independent filters (`status`, `role_applied`, `skill`, `keyword`) and pagination. DynamoDB has no `WHERE` clause — every keyed query must target a partition key, or it devolves into an expensive full-table scan.
+`GET /candidates` must support four independent filters (`status`, `role_applied`, `skill`, `keyword`) and pagination. DynamoDB has no `WHERE` clause  every keyed query must target a partition key, or it devolves into an expensive full-table scan.
 
 **Decision**
 
@@ -281,7 +281,7 @@ When a caller sends `GET /candidates` with no `status` filter, there is no key t
 
 ---
 
-### ADR 2 — Role is never accepted from the client; admin accounts require an out-of-band CLI step
+### ADR 2 : Role is never accepted from the client; admin accounts require an out-of-band CLI step
 
 **Context**
 
@@ -289,7 +289,7 @@ Every role-based system faces a bootstrapping problem: how do you create the fir
 
 **Decision**
 
-`schemas.UserRegister` has no `role` field — not just ignored, but structurally absent — so there is literally nothing a client can send to influence their role. `auth.register_user()` hardcodes `role="reviewer"` unconditionally. Admin accounts are provisioned via:
+`schemas.UserRegister` has no `role` field  not just ignored, but structurally absent  so there is literally nothing a client can send to influence their role. `auth.register_user()` hardcodes `role="reviewer"` unconditionally. Admin accounts are provisioned via:
 
 ```bash
 docker compose exec backend python -m app.create_admin <email> <password>
@@ -299,11 +299,11 @@ This runs inside the backend container, which already requires server/container 
 
 **Trade-off**
 
-There is no self-service admin promotion path, which is the point. In production this would be an internal admin panel behind its own authentication layer, not a shell command — but for a take-home context the CLI approach keeps the security boundary clear without adding a whole admin-admin role tier.
+There is no self-service admin promotion path, which is the point. In production this would be an internal admin panel behind its own authentication layer, not a shell command  but for a take-home context the CLI approach keeps the security boundary clear without adding a whole admin-admin role tier.
 
 ---
 
-### ADR 3 — JWT `get_current_user` re-fetches the user from DynamoDB on every request
+### ADR 3 : JWT `get_current_user` re-fetches the user from DynamoDB on every request
 
 **Context**
 
@@ -337,13 +337,13 @@ def search_candidates(status: str, keyword: str, page: int, page_size: int):
 
 1. **No predicate push-down.** `SELECT * FROM candidates` fetches every row in the table before the Python list comprehension applies the `status` filter. The database does zero filtering work.
 
-2. **Pagination is cosmetic.** The caller sees 20 rows, but the database paid to read every row that exists. Pagination's whole purpose is to cap the *cost* per request — here it only caps the response payload size.
+2. **Pagination is cosmetic.** The caller sees 20 rows, but the database paid to read every row that exists. Pagination's whole purpose is to cap the *cost* per request  here it only caps the response payload size.
 
 3. **Linear cost scaling.** At 50 candidates the bug is invisible. At 50,000, every single list request reads 50,000 rows to return 20. At 5,000,000 the process runs out of memory or times out. The per-request cost grows proportionally to total table size, never to page size.
 
 ### Root cause
 
-Filtering and pagination are applied in the wrong layer — Python instead of the database. The database engine has indexes and query planners specifically designed to avoid reading rows that don't match a predicate.
+Filtering and pagination are applied in the wrong layer  Python instead of the database. The database engine has indexes and query planners specifically designed to avoid reading rows that don't match a predicate.
 
 ### Correct fix
 
@@ -358,11 +358,11 @@ ORDER  BY created_at DESC
 LIMIT  ? OFFSET ?;
 ```
 
-**DynamoDB — what this project actually does in `db.list_candidates`:**
+**DynamoDB : what this project actually does in `db.list_candidates`:**
 
 ```python
 # Query the GSI keyed on `status`.
-# DynamoDB reads only items whose status partition key matches —
+# DynamoDB reads only items whose status partition key matches 
 # the rest of the table is never touched.
 items = candidates_table.query(
     IndexName="status-created_at-index",
@@ -370,17 +370,17 @@ items = candidates_table.query(
 )["Items"]
 ```
 
-Any remaining in-memory work (role substring check, keyword filter, Python-side sort and slice) is acceptable *after* the GSI already narrowed the result set to a small partition. Ideally, pagination would use DynamoDB's native `ExclusiveStartKey` / `LastEvaluatedKey` cursor mechanism rather than a Python slice, since numeric offsets (`page * page_size`) require discarding rows the database already read — they don't map cleanly onto DynamoDB's pagination model.
+Any remaining in-memory work (role substring check, keyword filter, Python-side sort and slice) is acceptable *after* the GSI already narrowed the result set to a small partition. Ideally, pagination would use DynamoDB's native `ExclusiveStartKey` / `LastEvaluatedKey` cursor mechanism rather than a Python slice, since numeric offsets (`page * page_size`) require discarding rows the database already read  they don't map cleanly onto DynamoDB's pagination model.
 
 ---
 
 ## Learning Reflection
 
-The most significant shift this project forced was **designing around query access patterns before writing any application code**. In a relational system you normalize first and tune indexes reactively when queries prove slow. With DynamoDB you must enumerate every query the application will ever make — which GSI, which `KeyConditionExpression`, which attributes will be filter-only — *before* calling `create_table`, because changing the key schema afterward requires rebuilding the table.
+The most significant shift this project forced was **designing around query access patterns before writing any application code**. In a relational system you normalize first and tune indexes reactively when queries prove slow. With DynamoDB you must enumerate every query the application will ever make  which GSI, which `KeyConditionExpression`, which attributes will be filter-only  *before* calling `create_table`, because changing the key schema afterward requires rebuilding the table.
 
-The clearest lesson came from the `GET /candidates` endpoint. Four filter parameters sound straightforward until you realize DynamoDB needs a partition key for every efficient query, and only one of the four filters (`status`) could be turned into a reliable key condition for the queries I expected to be most common. `skill` requires DynamoDB's `contains()` function, which works only as a `FilterExpression` (not a key condition), and `keyword` is a substring match that DynamoDB cannot do at all at the key level — both had to stay in Python. Deciding which filters earned a GSI and which were acceptable in-memory operations required thinking about cardinality and query selectivity up front, which is a very different mental model from SQL.
+The clearest lesson came from the `GET /candidates` endpoint. Four filter parameters sound straightforward until you realize DynamoDB needs a partition key for every efficient query, and only one of the four filters (`status`) could be turned into a reliable key condition for the queries I expected to be most common. `skill` requires DynamoDB's `contains()` function, which works only as a `FilterExpression` (not a key condition), and `keyword` is a substring match that DynamoDB cannot do at all at the key level  both had to stay in Python. Deciding which filters earned a GSI and which were acceptable in-memory operations required thinking about cardinality and query selectivity up front, which is a very different mental model from SQL.
 
-The JWT re-validation choice (ADR 3) was another deliberate trade-off moment: adding one DynamoDB read per request to buy immediate role revocation. Having to articulate *why* the extra latency was worth it — rather than defaulting to stateless JWT because "that's how JWT works" — was a useful exercise in matching technical decisions to the specific threat model of the product.
+The JWT re-validation choice (ADR 3) was another deliberate trade-off moment: adding one DynamoDB read per request to buy immediate role revocation. Having to articulate *why* the extra latency was worth it  rather than defaulting to stateless JWT because "that's how JWT works"  was a useful exercise in matching technical decisions to the specific threat model of the product.
 
 **Given more time, two things I would change:**
 
@@ -394,7 +394,7 @@ The JWT re-validation choice (ADR 3) was another deliberate trade-off moment: ad
 
 - `GET /candidates` with no `status` filter falls back to a full DynamoDB table scan (see ADR 1).
 - Case-insensitive substring matching for `role_applied` and `keyword` happens in Python after the GSI query.
-- The mock AI summary is not persisted — it is regenerated on every `POST /candidates/{id}/summary` call.
+- The mock AI summary is not persisted  it is regenerated on every `POST /candidates/{id}/summary` call.
 - The SSE stream endpoint (`GET /candidates/{id}/stream`) polls DynamoDB every 3 seconds per open connection instead of using DynamoDB Streams or a pub/sub layer; it also will not fan out across multiple backend workers.
 - No rate limiting on `/auth/login` or `/auth/register`.
 - JWT lifetime is 8 hours with no refresh-token mechanism; users must re-login after expiry.
