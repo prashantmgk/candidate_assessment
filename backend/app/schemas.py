@@ -63,6 +63,13 @@ class CandidateCreate(BaseModel):
     role_applied: str = Field(min_length=1, max_length=100)
     skills: list[str] = []
 
+class CandidateListResponse(BaseModel):
+    """Paginated wrapper returned by GET /candidates."""
+    items: list[CandidateListItem]
+    page: int
+    page_size: int
+    total: int
+
 
 # ---------------- auth ----------------
 
