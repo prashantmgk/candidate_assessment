@@ -1,0 +1,26 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / React / Vite
+node_modules/
+frontend/dist/
+npm-debug.log*
+
+# DynamoDB Local
+dynamodb_data/
+*.db
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
